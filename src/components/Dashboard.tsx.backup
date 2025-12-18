@@ -1,0 +1,223 @@
+import React, { useState, useEffect } from 'react';
+import { Radar, RadarChart as RechartsRadar, PolarGrid, PolarAngleAxis, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
+import { getXPToNextRank, getRandomQuote } from '../config/ranks';
+import { Award, Quote, Trophy } from 'lucide-react';
+import { getTotalPoints, getAreaTotals, getWeeklyProgress, getCurrentStreak, getLongestStreak } from '../utils/storage';
+
+export const Dashboard: React.FC = () => {
+    const [currentQuote] = useState(() => getRandomQuote());
+    const [totalXP, setTotalXP] = useState(0);
+    const [areaTotals, setAreaTotals] = useState({ Physical: 0, Psyche: 0, Intellect: 0, Spiritual: 0, Core: 0 });
+    const [weeklyData, setWeeklyData] = useState<Array<{ day: string; total: number }>>([]);
+    const [streak, setStreak] = useState(0);
+    const [longestStreak, setLongestStreak] = useState(0);
+
+    useEffect(() => {
+        const loadData = () => {
+            setTotalXP(getTotalPoints());
+            setAreaTotals(getAreaTotals());
+            setWeeklyData(getWeeklyProgress());
+            setStreak(getCurrentStreak());
+            setLongestStreak(getLongestStreak());
+        };
+
+        loadData();
+        const interval = setInterval(loadData, 1000);
+        return () => clearInterval(interval);
+    }, []);
+
+    const radarData = [
+        { area: 'Physical', value: Math.min(100, areaTotals.Physical) },
+        { area: 'Psyche', value: Math.min(100, areaTotals.Psyche) },
+        { area: 'Intellect', value: Math.min(100, areaTotals.Intellect) },
+        { area: 'Spiritual', value: Math.min(100, areaTotals.Spiritual) },
+        { area: 'Core', value: Math.min(100, areaTotals.Core) },
+    ];
+
+    const avgXP = Math.round(Object.values(areaTotals).reduce((sum, v) => sum + v, 0) / 5);
+    const rankInfo = getXPToNextRank(totalXP);
+
+    return (
+        <div className="min-h-screen bg-luxury-black text-royal-blue p-8">
+            <div className="max-w-7xl mx-auto space-y-8"
+
+                {/* Quote Widget */}
+                <div className="luxury-card rounded-lg p-8 border-l-4 border-royal-blue">
+                <div className="flex items-start gap-6">
+                    <Quote className="text-lavender mt-1 flex-shrink-0" size={36} />
+                    <div>
+                        <p className="text-2xl text-royal-blue italic leading-relaxed mb-3" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
+                            "{currentQuote.text}"
+                        </p>
+                        <p className="text-lavender">— {currentQuote.author}</p>
+                    </div>
+                </div>
+            </div>
+
+            {/* Rank Banner */}
+            <div className="luxury-card rounded-lg p-8 border-2" style={{ borderColor: rankInfo.current.color }}>
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-6">
+                        <Award className="flex-shrink-0" style={{ color: rankInfo.current.color }} size={56} />
+                        <div>
+                            <h2 className="text-4xl font-bold mb-2" style={{ color: rankInfo.current.color, fontFamily: "'Times New Roman', Times, serif" }}>
+                                {rankInfo.current.name}
+                            </h2>
+                            <p className="text-lavender text-lg">{rankInfo.current.description}</p>
+                            {rankInfo.next && (
+                                <p className="text-veridian mt-2">
+                                    <span className="font-bold">{rankInfo.xpNeeded} XP</span> to <span className="italic">{rankInfo.next.name}</span>
+                                </p>
+                            )}
+                        </div>
+                    </div>
+                    <div className="text-right">
+                        <p className="text-lavender uppercase tracking-widest mb-2" style={{ fontSize: '0.75rem' }}>Total XP</p>
+                        <p className="text-6xl font-black" style={{ color: rankInfo.current.color, fontFamily: "'Times New Roman', Times, serif" }}>
+                            {totalXP}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            {/* Stats Summary */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="luxury-card rounded-lg p-6">
+                    <h3 className="text-lavender text-xs uppercase tracking-widest mb-3">Total XP</h3>
+                    <p className="text-5xl font-bold text-royal-blue" style={{ fontFamily: "'Times New Roman', Times, serif" }}>{totalXP}</p>
+                </div>
+                <div className="luxury-card rounded-lg p-6">
+                    <h3 className="text-lavender text-xs uppercase tracking-widest mb-3">Average Score</h3>
+                    <p className="text-5xl font-bold text-veridian" style={{ fontFamily: "'Times New Roman', Times, serif" }}>{avgXP}</p>
+                </div>
+                <div className="luxury-card rounded-lg p-6">
+                    <h3 className="text-lavender text-xs uppercase tracking-widest mb-3">Current Streak</h3>
+                    <p className="text-5xl font-bold text-gold" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
+                        {streak} <span className="text-2xl">days</span>
+                    </p>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+                {/* Radar Chart */}
+                <div className="luxury-card rounded-lg p-8">
+                    <h2 className="text-2xl font-bold mb-6 text-royal-blue" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
+                        Attribute Mastery
+                    </h2>
+                    <ResponsiveContainer width="100%" height={400}>
+                        <RechartsRadar data={radarData}>
+                            <PolarGrid stroke="rgba(65, 105, 225, 0.1)" />
+                            <PolarAngleAxis
+                                dataKey="area"
+                                tick={{ fill: '#4169E1', fontSize: 13, fontFamily: "'Times New Roman', Times, serif", fontWeight: 'bold' }}
+                            />
+                            <Radar
+                                name="XP"
+                                dataKey="value"
+                                stroke="#4169E1"
+                                fill="#4169E1"
+                                fillOpacity={0.3}
+                                strokeWidth={2}
+                            />
+                            <Tooltip
+                                contentStyle={{
+                                    backgroundColor: '#0a0a0a',
+                                    border: '1px solid #4169E1',
+                                    borderRadius: '8px',
+                                    fontFamily: "'Times New Roman', Times, serif",
+                                    color: '#4169E1',
+                                }}
+                                formatter={(value: any) => [`${value} XP`, 'Attribute']}
+                            />
+                        </RechartsRadar>
+                    </ResponsiveContainer>
+                </div>
+
+                {/* Weekly Progress Chart */}
+                <div className="luxury-card rounded-lg p-8">
+                    <h2 className="text-2xl font-bold mb-6 text-royal-blue" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
+                        Weekly Progression
+                    </h2>
+                    <ResponsiveContainer width="100%" height={400}>
+                        <LineChart data={weeklyData}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(65, 105, 225, 0.1)" />
+                            <XAxis
+                                dataKey="day"
+                                stroke="#9D8FBF"
+                                style={{ fontFamily: "'Times New Roman', Times, serif", fontSize: 12 }}
+                            />
+                            <YAxis
+                                stroke="#9D8FBF"
+                                style={{ fontFamily: "'Times New Roman', Times, serif", fontSize: 12 }}
+                            />
+                            <Tooltip
+                                contentStyle={{
+                                    backgroundColor: '#0a0a0a',
+                                    border: '1px solid #4169E1',
+                                    borderRadius: '8px',
+                                    fontFamily: "'Times New Roman', Times, serif",
+                                    color: '#4169E1',
+                                }}
+                                formatter={(value: any) => [`${value} XP`, 'Daily Total']}
+                            />
+                            <Line
+                                type="monotone"
+                                dataKey="total"
+                                stroke="#40826D"
+                                strokeWidth={3}
+                                dot={{ fill: '#40826D', r: 6 }}
+                                activeDot={{ r: 8 }}
+                            />
+                        </LineChart>
+                    </ResponsiveContainer>
+                </div>
+            </div>
+
+            {/* Progress Insights */}
+            <div className="luxury-card rounded-lg p-8 border-l-4 border-veridian">
+                <h2 className="text-2xl font-bold mb-6 text-royal-blue" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
+                    Progress Insights
+                </h2>
+                <div className="space-y-4">
+                    {totalXP === 0 ? (
+                        <div className="flex items-start gap-4">
+                            <div className="w-2 h-2 bg-lavender rounded-full mt-2" />
+                            <p className="text-lavender italic text-lg">
+                                Begin your journey. Complete daily tasks to unlock insights about your evolution...
+                            </p>
+                        </div>
+                    ) : (
+                        <>
+                            {streak >= 3 && (
+                                <div className="flex items-start gap-4">
+                                    <div className="w-2 h-2 bg-veridian rounded-full mt-2" />
+                                    <p className="text-royal-blue text-lg">
+                                        <span className="font-bold text-veridian">{streak}-Day Mastery Streak:</span> Momentum compounds. Neural pathways strengthening through disciplined repetition.
+                                    </p>
+                                </div>
+                            )}
+                            {areaTotals.Physical > 20 && (
+                                <div className="flex items-start gap-4">
+                                    <div className="w-2 h-2 bg-gold rounded-full mt-2" />
+                                    <p className="text-royal-blue text-lg">
+                                        <span className="font-bold text-gold">Physical Excellence:</span> The body adapts. Increased mitochondrial density improving energy systems.
+                                    </p>
+                                </div>
+                            )}
+                            {areaTotals.Psyche > 15 && (
+                                <div className="flex items-start gap-4">
+                                    <div className="w-2 h-2 bg-lavender rounded-full mt-2" />
+                                    <p className="text-royal-blue text-lg">
+                                        <span className="font-bold text-lavender">Mental Discipline:</span> Prefrontal cortex activation increasing. Decision fatigue diminishing.
+                                    </p>
+                                </div>
+                            )}
+                        </>
+                    )}
+                </div>
+            </div>
+        </div>
+        </div >
+    );
+};

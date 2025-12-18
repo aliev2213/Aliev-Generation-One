@@ -1,0 +1,184 @@
+@import "tailwindcss";
+
+@layer base {
+
+    /* Premium Color Palette */
+    :root {
+        --color-luxury-black: #000000;
+        --color-deep-black: #0a0a0a;
+        --color-royal-blue: #4169E1;
+        --color-lavender: #9D8FBF;
+        --color-veridian: #40826D;
+        --color-gold-accent: #D4AF37;
+    }
+
+    body {
+        background-color: var(--color-luxury-black);
+        color: var(--color-royal-blue);
+        font-family: 'Times New Roman', Times, serif;
+        overflow-x: hidden;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+        font-family: 'Times New Roman', Times, serif;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+    }
+}
+
+@layer utilities {
+    .text-royal-blue {
+        color: var(--color-royal-blue);
+    }
+
+    .text-lavender {
+        color: var(--color-lavender);
+    }
+
+    .text-veridian {
+        color: var(--color-veridian);
+    }
+
+    .text-gold {
+        color: var(--color-gold-accent);
+    }
+
+    .bg-luxury-black {
+        background-color: var(--color-luxury-black);
+    }
+
+    .bg-deep-black {
+        background-color: var(--color-deep-black);
+    }
+
+    .border-royal-blue {
+        border-color: var(--color-royal-blue);
+    }
+
+    .border-lavender {
+        border-color: var(--color-lavender);
+    }
+
+    .luxury-card {
+        background: linear-gradient(135deg, rgba(10, 10, 10, 0.95), rgba(20, 20, 20, 0.95));
+        border: 1px solid rgba(65, 105, 225, 0.3);
+        box-shadow: 0 8px 32px rgba(65, 105, 225, 0.1);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .luxury-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 40px rgba(65, 105, 225, 0.2);
+        border-color: rgba(65, 105, 225, 0.5);
+    }
+
+    .luxury-glow {
+        box-shadow: 0 0 20px rgba(65, 105, 225, 0.5);
+    }
+
+    /* Smooth transitions */
+    * {
+        transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+    }
+
+    /* Button hover effects */
+    button {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    button:hover {
+        transform: translateY(-1px);
+        filter: brightness(1.1);
+    }
+
+    button:active {
+        transform: translateY(0);
+    }
+
+    /* Number animation */
+    @keyframes countUp {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .animate-count {
+        animation: countUp 0.5s ease-out;
+    }
+
+    /* Pulse animation for important elements */
+    @keyframes pulse {
+
+        0%,
+        100% {
+            opacity: 1;
+        }
+
+        50% {
+            opacity: 0.7;
+        }
+    }
+
+    .animate-pulse-slow {
+        animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+
+    /* Glow on focus */
+    input:focus,
+    textarea:focus {
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(65, 105, 225, 0.5);
+    }
+
+    /* Checkbox smooth animation */
+    input[type="checkbox"] {
+        transition: all 0.2s ease;
+    }
+
+    input[type="checkbox"]:checked {
+        transform: scale(1.1);
+    }
+
+    /* Fade in animation */
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+
+        to {
+            opacity: 1;
+        }
+    }
+
+    .fade-in {
+        animation: fadeIn 0.5s ease-out;
+    }
+
+    /* Slide up animation */
+    @keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .slide-up {
+        animation: slideUp 0.4s ease-out;
+    }
+}
