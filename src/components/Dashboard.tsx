@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Radar, RadarChart as RechartsRadar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import { getXPToNextRank, getRandomQuote } from '../config/ranks';
 import { getRecoveryInsight } from '../config/recovery';
-import { Award, Quote, Trophy, Flame, ShieldCheck } from 'lucide-react';
+import { Award, Quote, Trophy, Flame, ShieldCheck, RefreshCw } from 'lucide-react';
 // import { getTotalPoints, getAreaTotals, getWeeklyProgress, getCurrentStreak, getLongestStreak } from '../utils/storage';
 import { useGame } from '../context/GameContext';
 import type { DailyLogEntry } from '../context/GameContext';
@@ -18,6 +18,7 @@ export const Dashboard: React.FC = () => {
     // Recovery Specific State
     const [recoveryStreak, setRecoveryStreak] = useState(0);
     const [isRecoveryActive, setIsRecoveryActive] = useState(false);
+    const [insightIndex, setInsightIndex] = useState(0);
     const [recoveryInsight, setRecoveryInsight] = useState("");
 
     const { habits, logs } = useGame();
@@ -139,10 +140,15 @@ export const Dashboard: React.FC = () => {
             }
 
             setRecoveryStreak(calcStreak);
-            setRecoveryInsight(getRecoveryInsight(calcStreak));
+            // setRecoveryInsight update moved to separate effect
         }
 
     }, [logs, habits]);
+
+    // Update Recovery Insight when streak or index changes
+    useEffect(() => {
+        setRecoveryInsight(getRecoveryInsight(recoveryStreak, insightIndex));
+    }, [recoveryStreak, insightIndex]);
 
     const radarData = [
         { area: 'Physical', value: Math.min(2000, areaTotals.Physical) },
@@ -346,9 +352,18 @@ export const Dashboard: React.FC = () => {
                                     <h3 className="text-xl font-bold text-veridian mb-2" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
                                         Current Milestone
                                     </h3>
-                                    <p className="text-royal-blue text-lg leading-relaxed">
-                                        {recoveryInsight}
-                                    </p>
+                                    <div className="flex items-start gap-4">
+                                        <p className="text-royal-blue text-lg leading-relaxed flex-1">
+                                            {recoveryInsight}
+                                        </p>
+                                        <button
+                                            onClick={() => setInsightIndex(i => i + 1)}
+                                            className="p-2 text-royal-blue/50 hover:text-royal-blue hover:bg-royal-blue/10 rounded-full transition-all"
+                                            title="Get another insight for this milestone"
+                                        >
+                                            <RefreshCw size={18} />
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
 
