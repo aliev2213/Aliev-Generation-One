@@ -159,7 +159,20 @@ export const Dashboard: React.FC = () => {
     ];
 
     const avgXP = Math.round(Object.values(areaTotals).reduce((sum, v) => sum + v, 0) / 5);
-    const rankInfo = getXPToNextRank(totalXP);
+
+    // Milestones Configuration
+    const MILESTONES = [
+        { day: 0, label: 'Start', left: '0%', benefit: 'The Decision. You took back control.', bonus: 0 },
+        { day: 7, label: '7 Days', left: '7.7%', benefit: 'Physical Cleanse. Metabolites leave the blood. Sleep normalizes.', bonus: 500 },
+        { day: 30, label: '30 Days', left: '33%', benefit: 'Psychological Reset. Habit loops broken. Memory improves.', bonus: 1000 },
+        { day: 90, label: '90 Days', left: '100%', benefit: 'Full Integration. Dopamine baseline restored. You are free.', bonus: 2500 },
+    ];
+
+    // Calculate Bonus XP from Recovery
+    const bonusXP = MILESTONES.reduce((acc, m) => (recoveryStreak >= m.day ? acc + m.bonus : acc), 0);
+    const displayedXP = totalXP + bonusXP;
+
+    const rankInfo = getXPToNextRank(displayedXP);
 
     // Calculate Max Possible XP Per Day (Perfect Day)
     const maxDailyXP = habits.reduce((total, habit) => {
@@ -368,24 +381,51 @@ export const Dashboard: React.FC = () => {
                             </div>
 
                             {/* Visual Timeline Bar */}
-                            <div className="mt-6">
-                                <div className="flex justify-between text-xs text-lavender uppercase tracking-widest mb-2">
-                                    <span>Start</span>
-                                    <span>7 Days</span>
-                                    <span>30 Days</span>
-                                    <span>90 Days</span>
-                                </div>
-                                <div className="h-4 bg-luxury-black rounded-full overflow-hidden border border-royal-blue/20 relative">
-                                    {/* Markers */}
-                                    <div className="absolute left-[7.7%] h-full w-0.5 bg-royal-blue/20" />
-                                    <div className="absolute left-[33%] h-full w-0.5 bg-royal-blue/20" />
+                            <div className="mt-8 px-2">
+                                <div className="relative h-12">
+                                    {/* Labels & Tooltips Layer */}
+                                    {MILESTONES.map((m) => (
+                                        <div
+                                            key={m.day}
+                                            className="absolute top-0 transform -translate-x-1/2 group/marker cursor-help z-10"
+                                            style={{ left: m.left }}
+                                        >
+                                            <div className="text-xs text-lavender uppercase tracking-widest hover:text-white transition-colors">
+                                                {m.label}
+                                            </div>
 
-                                    {/* Fill */}
-                                    <div
-                                        className="h-full bg-gradient-to-r from-teal-900 to-veridian transition-all duration-1000 ease-out"
-                                        style={{ width: `${Math.min(100, (recoveryStreak / 90) * 100)}%` }}
-                                    />
+                                            {/* Tooltip */}
+                                            <div className="hidden group-hover/marker:block absolute bottom-full mb-2 w-64 bg-slate-900/95 border border-indigo-500/50 p-3 rounded-lg shadow-xl backdrop-blur-sm z-50">
+                                                <div className="text-indigo-300 font-bold mb-1">{m.label} Milestone</div>
+                                                <p className="text-xs text-slate-300 leading-relaxed mb-2">{m.benefit}</p>
+                                                {m.bonus > 0 && (
+                                                    <div className="text-xs font-mono text-emerald-400">
+                                                        Bonus: +{m.bonus} XP
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+
+                                    {/* The Progress Bar */}
+                                    <div className="absolute top-6 w-full h-4 bg-luxury-black rounded-full overflow-hidden border border-royal-blue/20">
+                                        {/* Markers on the bar itself */}
+                                        {MILESTONES.slice(1).map(m => (
+                                            <div
+                                                key={m.day}
+                                                className="absolute h-full w-0.5 bg-royal-blue/20"
+                                                style={{ left: m.left }}
+                                            />
+                                        ))}
+
+                                        {/* Fill */}
+                                        <div
+                                            className="h-full bg-gradient-to-r from-teal-900 to-veridian transition-all duration-1000 ease-out"
+                                            style={{ width: `${Math.min(100, (recoveryStreak / 90) * 100)}%` }}
+                                        />
+                                    </div>
                                 </div>
+
                                 <p className="text-center text-xs text-lavender mt-2">
                                     {Math.max(0, 90 - recoveryStreak)} days until Full Integration
                                 </p>
