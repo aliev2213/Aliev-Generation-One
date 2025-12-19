@@ -43,10 +43,13 @@ export function getAllDailyLogs(): DailyLogEntry[] {
     return stored ? JSON.parse(stored) : [];
 }
 
-export function getTodayLog(): DailyLogEntry | null {
+export function getLogForDate(dateKey: string): DailyLogEntry | null {
     const logs = getAllDailyLogs();
-    const today = getTodayKey();
-    return logs.find(log => log.date === today) || null;
+    return logs.find(log => log.date === dateKey) || null;
+}
+
+export function getTodayLog(): DailyLogEntry | null {
+    return getLogForDate(getTodayKey());
 }
 
 export function saveDailyLog(entry: DailyLogEntry): void {

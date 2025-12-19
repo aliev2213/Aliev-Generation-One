@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useGame } from '../context/GameContext';
 import type { Habit } from '../context/GameContext';
-import { saveDailyLog, getTodayLog, getTodayKey } from '../utils/storage';
+import { saveDailyLog, getLogForDate } from '../utils/storage';
 import type { DailyLogEntry } from '../utils/storage';
+import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 
 interface DailyEntry {
     [key: string]: {
@@ -12,18 +13,28 @@ interface DailyEntry {
 }
 
 export const DailyLog: React.FC = () => {
-    const today = new Date().toLocaleDateString('en-US', {
+    // Current date being viewed/edited
+    const [currentDate, setCurrentDate] = useState(new Date());
+
+    const isToday = currentDate.toDateString() === new Date().toDateString();
+
+    // Formatting for display and storage keys
+    const displayDate = currentDate.toLocaleDateString('en-US', {
         weekday: 'long',
         year: 'numeric',
         month: 'long',
         day: 'numeric'
     });
+    const storageKey = currentDate.toISOString().split('T')[0];
 
-    const { habits } = useGame();
+    const { habits, refreshLogs } = useGame();
 
-    const [entries, setEntries] = useState<DailyEntry>(() => {
-        // Load from localStorage if exists
-        const savedLog = getTodayLog();
+    const [entries, setEntries] = useState<DailyEntry>({});
+
+    // Load data whenever date changes
+    useEffect(() => {
+        const savedLog = getLogForDate(storageKey);
+
         if (savedLog) {
             const restored: DailyEntry = {};
             Object.entries(savedLog.stats).forEach(([name, data]) => {
@@ -32,22 +43,22 @@ export const DailyLog: React.FC = () => {
                     quantity: data.quantity,
                 };
             });
-            // Ensure all current habits are in the restored object
+            // Ensure all current habits are present
             habits.forEach(stat => {
                 if (!restored[stat.name]) {
                     restored[stat.name] = { completed: false, quantity: 0 };
                 }
             });
-            return restored;
+            setEntries(restored);
+        } else {
+            // Initialize fresh for this date
+            const initial: DailyEntry = {};
+            habits.forEach(stat => {
+                initial[stat.name] = { completed: false, quantity: 0 };
+            });
+            setEntries(initial);
         }
-
-        // Initialize fresh
-        const initial: DailyEntry = {};
-        habits.forEach(stat => {
-            initial[stat.name] = { completed: false, quantity: 0 };
-        });
-        return initial;
-    });
+    }, [storageKey, habits]);
 
     const handleCheckboxChange = (name: string) => {
         setEntries(prev => ({
@@ -70,35 +81,18 @@ export const DailyLog: React.FC = () => {
     };
 
     const calculatePoints = (stat: Habit, entry: DailyEntry[string]) => {
-        // Unchecked tasks = 0 points (not penalties)
-        if (!entry.completed) return 0;
-
-        // Checked tasks = points based on quantity
+        if (!entry || !entry.completed) return 0;
         let points = entry.quantity * stat.pointsPerUnit;
-
-        // Special case for Morning Prayer (max 5 points)
-        if (stat.name === 'Morning Prayer') {
-            points = Math.min(points, 5);
-        }
-
+        if (stat.name === 'Morning Prayer') points = Math.min(points, 5);
         return points;
     };
 
     const calculateTotalByArea = () => {
-        const totals: Record<string, number> = {
-            Physical: 0,
-            Psyche: 0,
-            Intellect: 0,
-            Spiritual: 0,
-            Core: 0
-        };
-
+        const totals: Record<string, number> = { Physical: 0, Psyche: 0, Intellect: 0, Spiritual: 0, Core: 0 };
         habits.forEach(stat => {
             const entry = entries[stat.name];
-            const points = calculatePoints(stat, entry);
-            totals[stat.area] += points;
+            if (entry) totals[stat.area] += calculatePoints(stat, entry);
         });
-
         return totals;
     };
 
@@ -107,24 +101,30 @@ export const DailyLog: React.FC = () => {
         return Object.values(totals).reduce((sum, val) => sum + val, 0);
     };
 
-    // Auto-save to localStorage whenever entries change
+    // Save changes
     useEffect(() => {
+        // Prevent saving partial state during initialization
+        if (Object.keys(entries).length === 0) return;
+
         const dailyLogEntry: DailyLogEntry = {
-            date: getTodayKey(),
+            date: storageKey, // Use currently selected date
             stats: {},
             totalPoints: calculateDailyTotal(),
         };
 
         habits.forEach(stat => {
             const entry = entries[stat.name];
-            dailyLogEntry.stats[stat.name] = {
-                completed: entry.completed,
-                quantity: entry.quantity,
-                points: calculatePoints(stat, entry),
-            };
+            if (entry) {
+                dailyLogEntry.stats[stat.name] = {
+                    completed: entry.completed,
+                    quantity: entry.quantity,
+                    points: calculatePoints(stat, entry),
+                };
+            }
         });
 
         saveDailyLog(dailyLogEntry);
+        refreshLogs(); // Update context so Dashboard reflects changes immediately
     }, [entries]);
 
     const totals = calculateTotalByArea();
@@ -136,16 +136,43 @@ export const DailyLog: React.FC = () => {
         return acc;
     }, {} as Record<string, Habit[]>);
 
+    const changeDate = (days: number) => {
+        const newDate = new Date(currentDate);
+        newDate.setDate(newDate.getDate() + days);
+        // Prevent going into future
+        if (newDate > new Date()) return;
+        setCurrentDate(newDate);
+    };
+
     return (
         <div className="min-h-screen bg-[#0f172a] text-slate-100 p-8">
             <div className="max-w-5xl mx-auto">
 
-                {/* Header */}
-                <div className="mb-8 flex items-center justify-between">
-                    <div>
-                        <h1 className="text-3xl font-bold text-royal-blue mb-2" style={{ fontFamily: "'Times New Roman', Times, serif" }}>Daily Log</h1>
-                        <p className="text-lavender">{today}</p>
+                {/* Date Navigation Header */}
+                <div className="mb-8 flex items-center justify-between bg-slate-800/50 p-4 rounded-lg border border-slate-700">
+                    <button
+                        onClick={() => changeDate(-1)}
+                        className="p-2 hover:bg-slate-700 rounded-full transition-colors text-slate-400 hover:text-white"
+                    >
+                        <ChevronLeft size={24} />
+                    </button>
+
+                    <div className="text-center">
+                        <h1 className="text-2xl font-bold text-royal-blue mb-1" style={{ fontFamily: "'Times New Roman', Times, serif" }}>Daily Log</h1>
+                        <div className="flex items-center justify-center gap-2 text-lavender">
+                            <Calendar size={16} />
+                            <span>{displayDate}</span>
+                            {isToday && <span className="text-xs bg-royal-blue px-2 py-0.5 rounded text-white ml-2">TODAY</span>}
+                        </div>
                     </div>
+
+                    <button
+                        onClick={() => changeDate(1)}
+                        disabled={isToday}
+                        className={`p-2 rounded-full transition-colors ${isToday ? 'text-slate-700 cursor-not-allowed' : 'text-slate-400 hover:text-white hover:bg-slate-700'}`}
+                    >
+                        <ChevronRight size={24} />
+                    </button>
                 </div>
 
                 {/* Stats by Area */}
