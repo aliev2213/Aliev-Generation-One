@@ -129,6 +129,17 @@ export const Settings: React.FC = () => {
                                     placeholder="e.g. mins, rep, count"
                                 />
                             </div>
+                            <div>
+                                <label className="block text-sm text-slate-400 mb-1">Daily Target (Qty)</label>
+                                <input
+                                    type="number"
+                                    value={editForm.maxPerDay}
+                                    onChange={e => setEditForm({ ...editForm, maxPerDay: parseInt(e.target.value) || 0 })}
+                                    className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 focus:border-royal-blue outline-none"
+                                    placeholder="e.g. 1"
+                                />
+                                <p className="text-[10px] text-slate-500 mt-1">Set to 0 if no limit.</p>
+                            </div>
                         </div>
                         <div className="flex justify-end gap-3 mt-6">
                             <button

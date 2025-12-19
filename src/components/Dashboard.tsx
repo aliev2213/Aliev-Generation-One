@@ -155,6 +155,15 @@ export const Dashboard: React.FC = () => {
     const avgXP = Math.round(Object.values(areaTotals).reduce((sum, v) => sum + v, 0) / 5);
     const rankInfo = getXPToNextRank(totalXP);
 
+    // Calculate Max Possible XP Per Day (Perfect Day)
+    const maxDailyXP = habits.reduce((total, habit) => {
+        // If maxPerDay is 0 (unlimited), assume 1 for goal sizing, or maybe the user should set it.
+        // Let's use 1 as a fallback multiplier if maxPerDay is missing/0 to ensure the chart has *some* height.
+        // Or if it's 'boolean' type, multiplier is 1.
+        const multiplier = habit.type === 'boolean' ? 1 : Math.max(1, habit.maxPerDay || 0);
+        return total + (habit.pointsPerUnit * multiplier);
+    }, 0);
+
     return (
         <div className="min-h-screen bg-luxury-black text-royal-blue p-8">
             <div className="max-w-7xl mx-auto space-y-8">
@@ -278,6 +287,7 @@ export const Dashboard: React.FC = () => {
                                 <YAxis
                                     stroke="#9D8FBF"
                                     style={{ fontFamily: "'Times New Roman', Times, serif", fontSize: 12 }}
+                                    domain={[0, maxDailyXP || 100]}
                                 />
                                 <Tooltip
                                     contentStyle={{
@@ -287,7 +297,7 @@ export const Dashboard: React.FC = () => {
                                         fontFamily: "'Times New Roman', Times, serif",
                                         color: '#4169E1',
                                     }}
-                                    formatter={(value: any) => [`${value} XP`, 'Daily Total']}
+                                    formatter={(value: any) => [`${value} / ${maxDailyXP} XP`, 'Daily Total']}
                                 />
                                 <Line
                                     type="monotone"
