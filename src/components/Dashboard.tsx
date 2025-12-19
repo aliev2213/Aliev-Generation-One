@@ -389,11 +389,11 @@ export const Dashboard: React.FC = () => {
                                     {MILESTONES.map((m) => (
                                         <div
                                             key={m.day}
-                                            className={`absolute top-0 transform group/marker cursor-help z-10 ${m.day === 0 ? '-translate-x-0' :
-                                                    m.day === 90 ? '-translate-x-[90%]' :
+                                            className={`absolute top-0 transform group/marker cursor-help z-10 whitespace-nowrap ${m.day === 0 ? '-translate-x-0' :
+                                                    m.day === 90 ? '-translate-x-full' :
                                                         '-translate-x-1/2'
                                                 }`}
-                                            style={{ left: m.left }}
+                                            style={{ left: m.day === 90 ? '100%' : m.left }}
                                         >
                                             <div className="text-xs text-lavender uppercase tracking-widest hover:text-white transition-colors">
                                                 {m.label}
