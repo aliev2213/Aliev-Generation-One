@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Radar, RadarChart as RechartsRadar, PolarGrid, PolarAngleAxis, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
+import { Radar, RadarChart as RechartsRadar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import { getXPToNextRank, getRandomQuote } from '../config/ranks';
 import { Award, Quote, Trophy } from 'lucide-react';
-import { getTotalPoints, getAreaTotals, getWeeklyProgress, getCurrentStreak, getLongestStreak } from '../utils/storage';
+// import { getTotalPoints, getAreaTotals, getWeeklyProgress, getCurrentStreak, getLongestStreak } from '../utils/storage';
+import { useGame } from '../context/GameContext';
 
 export const Dashboard: React.FC = () => {
     const [currentQuote] = useState(() => getRandomQuote());
@@ -12,26 +13,70 @@ export const Dashboard: React.FC = () => {
     const [streak, setStreak] = useState(0);
     const [longestStreak, setLongestStreak] = useState(0);
 
-    useEffect(() => {
-        const loadData = () => {
-            setTotalXP(getTotalPoints());
-            setAreaTotals(getAreaTotals());
-            setWeeklyData(getWeeklyProgress());
-            setStreak(getCurrentStreak());
-            setLongestStreak(getLongestStreak());
-        };
+    const { habits, logs } = useGame();
 
-        loadData();
-        const interval = setInterval(loadData, 1000);
-        return () => clearInterval(interval);
-    }, []);
+    // Derived State Calculation
+    useEffect(() => {
+        if (!logs.length) return;
+
+        // Calculate Total XP
+        const dailyTotal = logs.reduce((sum, log) => sum + log.totalPoints, 0);
+
+        // Let's reimplement stats logic here for dynamic habits support
+        const newAreaTotals = { Physical: 0, Psyche: 0, Intellect: 0, Spiritual: 0, Core: 0 };
+
+        logs.forEach(log => {
+            Object.entries(log.stats).forEach(([statName, statData]) => {
+                const habit = habits.find(h => h.name === statName);
+                if (habit) {
+                    newAreaTotals[habit.area] += statData.points;
+                }
+            });
+        });
+
+        setTotalXP(dailyTotal);
+        setAreaTotals(newAreaTotals);
+
+        // Weekly Data
+        const last7Days = [];
+        for (let i = 6; i >= 0; i--) {
+            const date = new Date();
+            date.setDate(date.getDate() - i);
+            const dateKey = date.toISOString().split('T')[0];
+            const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
+            const log = logs.find(l => l.date === dateKey);
+            last7Days.push({ day: dayName, total: log ? log.totalPoints : 0 });
+        }
+        setWeeklyData(last7Days);
+
+        // Streak
+        let currentStreak = 0;
+        const sortedLogs = [...logs].sort((a, b) => b.date.localeCompare(a.date));
+        const today = new Date();
+        for (let i = 0; i < sortedLogs.length; i++) {
+            const checkDate = new Date(today);
+            checkDate.setDate(today.getDate() - i);
+            const checkKey = checkDate.toISOString().split('T')[0];
+            if (sortedLogs.find(l => l.date === checkKey && l.totalPoints > 0)) {
+                currentStreak++;
+            } else {
+                break;
+            }
+        }
+        setStreak(currentStreak);
+
+        // Longest Streak (still from local storage for now as it persists)
+        const storedLongest = parseInt(localStorage.getItem('life-rpg-longest-streak') || '0');
+        setLongestStreak(Math.max(storedLongest, currentStreak));
+
+    }, [logs, habits]);
 
     const radarData = [
-        { area: 'Physical', value: Math.min(100, areaTotals.Physical) },
-        { area: 'Psyche', value: Math.min(100, areaTotals.Psyche) },
-        { area: 'Intellect', value: Math.min(100, areaTotals.Intellect) },
-        { area: 'Spiritual', value: Math.min(100, areaTotals.Spiritual) },
-        { area: 'Core', value: Math.min(100, areaTotals.Core) },
+        { area: 'Physical', value: Math.min(2000, areaTotals.Physical) },
+        { area: 'Psyche', value: Math.min(2000, areaTotals.Psyche) },
+        { area: 'Intellect', value: Math.min(2000, areaTotals.Intellect) },
+        { area: 'Spiritual', value: Math.min(2000, areaTotals.Spiritual) },
+        { area: 'Core', value: Math.min(2000, areaTotals.Core) },
     ];
 
     const avgXP = Math.round(Object.values(areaTotals).reduce((sum, v) => sum + v, 0) / 5);
@@ -121,6 +166,7 @@ export const Dashboard: React.FC = () => {
                                     dataKey="area"
                                     tick={{ fill: '#4169E1', fontSize: 13, fontFamily: "'Times New Roman', Times, serif", fontWeight: 'bold' }}
                                 />
+                                <PolarRadiusAxis angle={30} domain={[0, 2000]} tick={false} axisLine={false} />
                                 <Radar
                                     name="XP"
                                     dataKey="value"
@@ -137,7 +183,7 @@ export const Dashboard: React.FC = () => {
                                         fontFamily: "'Times New Roman', Times, serif",
                                         color: '#4169E1',
                                     }}
-                                    formatter={(value: any) => [`${value} XP`, 'Attribute']}
+                                    formatter={(value: any) => [`${value} / 2000 XP`, 'Attribute']}
                                 />
                             </RechartsRadar>
                         </ResponsiveContainer>

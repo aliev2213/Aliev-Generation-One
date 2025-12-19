@@ -1,9 +1,9 @@
 import React from 'react';
-import { LayoutDashboard, ClipboardList, BookOpen } from 'lucide-react';
+import { LayoutDashboard, ClipboardList, BookOpen, Settings } from 'lucide-react';
 
 interface NavigationProps {
-    currentPage: 'dashboard' | 'daily-log' | 'journal';
-    onNavigate: (page: 'dashboard' | 'daily-log' | 'journal') => void;
+    currentPage: 'dashboard' | 'daily-log' | 'journal' | 'settings';
+    onNavigate: (page: 'dashboard' | 'daily-log' | 'journal' | 'settings') => void;
 }
 
 export const Navigation: React.FC<NavigationProps> = ({ currentPage, onNavigate }) => {
@@ -11,6 +11,7 @@ export const Navigation: React.FC<NavigationProps> = ({ currentPage, onNavigate 
         { id: 'dashboard' as const, label: 'Dashboard', icon: LayoutDashboard },
         { id: 'daily-log' as const, label: 'Daily Log', icon: ClipboardList },
         { id: 'journal' as const, label: 'Journal', icon: BookOpen },
+        { id: 'settings' as const, label: 'Settings', icon: Settings },
     ];
 
     return (

@@ -4,9 +4,10 @@ import { Dashboard } from './components/Dashboard';
 import { Journal } from './components/Journal';
 import { Navigation } from './components/Navigation';
 import { ToastContainer } from './components/Toast';
+import { Settings } from './components/Settings';
 
 function App() {
-  const [currentPage, setCurrentPage] = useState<'dashboard' | 'daily-log' | 'journal'>('dashboard');
+  const [currentPage, setCurrentPage] = useState<'dashboard' | 'daily-log' | 'journal' | 'settings'>('dashboard');
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -25,6 +26,10 @@ function App() {
             e.preventDefault();
             setCurrentPage('journal');
             break;
+          case '4':
+            e.preventDefault();
+            setCurrentPage('settings');
+            break;
         }
       }
     };
@@ -42,6 +47,7 @@ function App() {
         {currentPage === 'dashboard' && <Dashboard />}
         {currentPage === 'daily-log' && <DailyLog />}
         {currentPage === 'journal' && <Journal />}
+        {currentPage === 'settings' && <Settings />}
       </div>
     </div>
   );

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { SUBSTATS } from '../config/stats';
+import { useGame } from '../context/GameContext';
+import type { Habit } from '../context/GameContext';
 import { saveDailyLog, getTodayLog, getTodayKey } from '../utils/storage';
 import type { DailyLogEntry } from '../utils/storage';
 
@@ -18,6 +19,8 @@ export const DailyLog: React.FC = () => {
         day: 'numeric'
     });
 
+    const { habits } = useGame();
+
     const [entries, setEntries] = useState<DailyEntry>(() => {
         // Load from localStorage if exists
         const savedLog = getTodayLog();
@@ -29,12 +32,18 @@ export const DailyLog: React.FC = () => {
                     quantity: data.quantity,
                 };
             });
+            // Ensure all current habits are in the restored object
+            habits.forEach(stat => {
+                if (!restored[stat.name]) {
+                    restored[stat.name] = { completed: false, quantity: 0 };
+                }
+            });
             return restored;
         }
 
         // Initialize fresh
         const initial: DailyEntry = {};
-        SUBSTATS.forEach(stat => {
+        habits.forEach(stat => {
             initial[stat.name] = { completed: false, quantity: 0 };
         });
         return initial;
@@ -60,7 +69,7 @@ export const DailyLog: React.FC = () => {
         }));
     };
 
-    const calculatePoints = (stat: typeof SUBSTATS[0], entry: DailyEntry[string]) => {
+    const calculatePoints = (stat: Habit, entry: DailyEntry[string]) => {
         // Unchecked tasks = 0 points (not penalties)
         if (!entry.completed) return 0;
 
@@ -84,7 +93,7 @@ export const DailyLog: React.FC = () => {
             Core: 0
         };
 
-        SUBSTATS.forEach(stat => {
+        habits.forEach(stat => {
             const entry = entries[stat.name];
             const points = calculatePoints(stat, entry);
             totals[stat.area] += points;
@@ -106,7 +115,7 @@ export const DailyLog: React.FC = () => {
             totalPoints: calculateDailyTotal(),
         };
 
-        SUBSTATS.forEach(stat => {
+        habits.forEach(stat => {
             const entry = entries[stat.name];
             dailyLogEntry.stats[stat.name] = {
                 completed: entry.completed,
@@ -121,11 +130,11 @@ export const DailyLog: React.FC = () => {
     const totals = calculateTotalByArea();
     const dailyTotal = calculateDailyTotal();
 
-    const groupedStats = SUBSTATS.reduce((acc, stat) => {
+    const groupedStats = habits.reduce((acc, stat) => {
         if (!acc[stat.area]) acc[stat.area] = [];
         acc[stat.area].push(stat);
         return acc;
-    }, {} as Record<string, typeof SUBSTATS>);
+    }, {} as Record<string, Habit[]>);
 
     return (
         <div className="min-h-screen bg-[#0f172a] text-slate-100 p-8">
