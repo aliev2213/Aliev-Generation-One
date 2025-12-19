@@ -334,7 +334,7 @@ export const Dashboard: React.FC = () => {
                 </div>
 
                 {/* RECOVERY JOURNEY WIDGET */}
-                <div className="luxury-card rounded-lg p-8 border-l-4 border-veridian mt-8">
+                <div className="luxury-card rounded-lg p-8 border-l-4 border-veridian mt-8 overflow-visible">
                     <div className="flex items-center justify-between mb-6">
                         <h2 className="text-2xl font-bold text-royal-blue flex items-center gap-3" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
                             <ShieldCheck className="text-veridian" size={28} />
@@ -390,8 +390,8 @@ export const Dashboard: React.FC = () => {
                                         <div
                                             key={m.day}
                                             className={`absolute top-0 transform group/marker cursor-help z-10 whitespace-nowrap ${m.day === 0 ? '-translate-x-0' :
-                                                    m.day === 90 ? '-translate-x-full' :
-                                                        '-translate-x-1/2'
+                                                m.day === 90 ? '-translate-x-full' :
+                                                    '-translate-x-1/2'
                                                 }`}
                                             style={{ left: m.day === 90 ? '100%' : m.left }}
                                         >
@@ -400,7 +400,10 @@ export const Dashboard: React.FC = () => {
                                             </div>
 
                                             {/* Tooltip */}
-                                            <div className="hidden group-hover/marker:block absolute bottom-full mb-2 w-64 bg-slate-900/95 border border-indigo-500/50 p-3 rounded-lg shadow-xl backdrop-blur-sm z-50">
+                                            <div className={`hidden group-hover/marker:block absolute bottom-full mb-2 w-64 bg-slate-900/95 border border-indigo-500/50 p-3 rounded-lg shadow-xl backdrop-blur-sm z-50 ${m.day === 0 ? 'left-0 origin-bottom-left' :
+                                                m.day === 90 ? 'right-0 origin-bottom-right' :
+                                                    'left-1/2 -translate-x-1/2 origin-bottom'
+                                                }`}>
                                                 <div className="text-indigo-300 font-bold mb-1">{m.label} Milestone</div>
                                                 <p className="text-xs text-slate-300 leading-relaxed mb-2">{m.benefit}</p>
                                                 {m.bonus > 0 && (
