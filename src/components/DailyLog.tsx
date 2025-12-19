@@ -202,7 +202,9 @@ export const DailyLog: React.FC = () => {
                         <div className="space-y-3">
                             {stats.map(stat => {
                                 const entry = entries[stat.name];
-                                const points = calculatePoints(stat, entry);
+                                // If entry is not yet loaded, safe fallback (or loading state, but fallback is smoother)
+                                const safeEntry = entry || { completed: false, quantity: 0 };
+                                const points = calculatePoints(stat, safeEntry);
 
                                 return (
                                     <div
@@ -212,24 +214,24 @@ export const DailyLog: React.FC = () => {
                                         <div className="flex items-center gap-4">
                                             <input
                                                 type="checkbox"
-                                                checked={entry.completed}
+                                                checked={safeEntry.completed}
                                                 onChange={() => handleCheckboxChange(stat.name)}
                                                 className="w-5 h-5 rounded border-slate-600 text-blue-500 focus:ring-2 focus:ring-blue-500 cursor-pointer"
                                             />
 
                                             <div className="flex-1">
-                                                <h3 className={`font-semibold ${entry.completed ? 'text-slate-100' : 'text-slate-400'}`}>
+                                                <h3 className={`font-semibold ${safeEntry.completed ? 'text-slate-100' : 'text-slate-400'}`}>
                                                     {stat.name}
                                                 </h3>
                                                 <p className="text-xs text-slate-500">{stat.description}</p>
                                             </div>
 
-                                            {entry.completed && (
+                                            {safeEntry.completed && (
                                                 <div className="flex items-center gap-2">
                                                     <input
                                                         type="number"
                                                         min="0"
-                                                        value={entry.quantity}
+                                                        value={safeEntry.quantity}
                                                         onChange={(e) => handleQuantityChange(stat.name, parseInt(e.target.value) || 0)}
                                                         className="w-20 bg-slate-900 border border-slate-600 rounded px-3 py-2 text-center font-mono focus:border-blue-500 focus:outline-none"
                                                         placeholder="0"
