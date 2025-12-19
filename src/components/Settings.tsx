@@ -44,12 +44,15 @@ export const Settings: React.FC = () => {
 
     const startAdd = () => {
         setEditForm({
+            id: crypto.randomUUID(),
             name: '',
             description: '',
             area: 'Physical',
             pointsPerUnit: 1,
             unit: 'count',
-            maxPerDay: 0
+            type: 'number',
+            maxPerDay: 0,
+            points: 0
         });
         setIsAdding(true);
         setEditingId(null);

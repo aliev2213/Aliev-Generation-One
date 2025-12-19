@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Radar, RadarChart as RechartsRadar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import { getXPToNextRank, getRandomQuote } from '../config/ranks';
-import { Award, Quote, Trophy } from 'lucide-react';
+import { getRecoveryInsight } from '../config/recovery';
+import { Award, Quote, Trophy, Flame, ShieldCheck } from 'lucide-react';
 // import { getTotalPoints, getAreaTotals, getWeeklyProgress, getCurrentStreak, getLongestStreak } from '../utils/storage';
 import { useGame } from '../context/GameContext';
+import type { DailyLogEntry } from '../context/GameContext';
 
 export const Dashboard: React.FC = () => {
     const [currentQuote] = useState(() => getRandomQuote());
@@ -13,29 +15,43 @@ export const Dashboard: React.FC = () => {
     const [streak, setStreak] = useState(0);
     const [longestStreak, setLongestStreak] = useState(0);
 
+    // Recovery Specific State
+    const [recoveryStreak, setRecoveryStreak] = useState(0);
+    const [isRecoveryActive, setIsRecoveryActive] = useState(false);
+    const [recoveryInsight, setRecoveryInsight] = useState("");
+
     const { habits, logs } = useGame();
 
     // Derived State Calculation
     useEffect(() => {
-        if (!logs.length) return;
+        if (!logs.length) {
+            setTotalXP(0);
+            // Even if no logs, we should check if a recovery habit exists to show the "Start" state
+            const weedHabit = habits.find(h => h.name.toLowerCase().match(/weed|sobriety|clean|marijuana|thc|smoke/));
+            setIsRecoveryActive(!!weedHabit);
+            return;
+        }
 
         // Calculate Total XP
         const dailyTotal = logs.reduce((sum, log) => sum + log.totalPoints, 0);
 
         // Let's reimplement stats logic here for dynamic habits support
-        const newAreaTotals = { Physical: 0, Psyche: 0, Intellect: 0, Spiritual: 0, Core: 0 };
+        const newAreaTotals: Record<string, number> = { Physical: 0, Psyche: 0, Intellect: 0, Spiritual: 0, Core: 0 };
 
         logs.forEach(log => {
             Object.entries(log.stats).forEach(([statName, statData]) => {
                 const habit = habits.find(h => h.name === statName);
                 if (habit) {
-                    newAreaTotals[habit.area] += statData.points;
+                    // Ensure area exists in newAreaTotals before adding
+                    if (newAreaTotals[habit.area] !== undefined) {
+                        newAreaTotals[habit.area] += (statData as any).points || 0;
+                    }
                 }
             });
         });
 
         setTotalXP(dailyTotal);
-        setAreaTotals(newAreaTotals);
+        setAreaTotals(newAreaTotals as any);
 
         // Weekly Data
         const last7Days = [];
@@ -67,7 +83,64 @@ export const Dashboard: React.FC = () => {
 
         // Longest Streak (still from local storage for now as it persists)
         const storedLongest = parseInt(localStorage.getItem('life-rpg-longest-streak') || '0');
-        setLongestStreak(Math.max(storedLongest, currentStreak));
+        const newLongest = Math.max(storedLongest, currentStreak);
+        setLongestStreak(newLongest);
+        localStorage.setItem('life-rpg-longest-streak', newLongest.toString()); // Ensure sync
+
+        // --- RECOVERY LOGIC ---
+        // 1. Find the habit
+        const weedHabit = habits.find(h => h.name.toLowerCase().match(/weed|sobriety|clean|marijuana|thc|smoke/));
+        setIsRecoveryActive(!!weedHabit);
+
+        if (weedHabit) {
+            let calcStreak = 0;
+            const logMap = new Map<string, DailyLogEntry>(logs.map(l => [l.date, l]));
+
+            // Check Today
+            const todayKey = new Date().toISOString().split('T')[0];
+            const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
+            const yesterdayKey = yesterday.toISOString().split('T')[0];
+
+            let dateCursor = new Date();
+
+            // Should we start from Today or Yesterday?
+            const logToday = logMap.get(todayKey);
+            const hasToday = logToday && logToday.stats[weedHabit.name] && logToday.stats[weedHabit.name].points > 0;
+
+            if (!hasToday) {
+                // Check yesterday
+                const logYesterday = logMap.get(yesterdayKey);
+                const hasYesterday = logYesterday && logYesterday.stats[weedHabit.name] && logYesterday.stats[weedHabit.name].points > 0;
+                if (!hasYesterday) {
+                    calcStreak = 0;
+                } else {
+                    // Start counting from yesterday
+                    dateCursor = yesterday;
+                    calcStreak = 0; // will increment in loop below
+                }
+            }
+
+            // Re-check start condition to enter loop
+            const startLog = logMap.get(dateCursor.toISOString().split('T')[0]);
+            const startHasVal = startLog && startLog.stats[weedHabit.name] && startLog.stats[weedHabit.name].points > 0;
+
+            if (startHasVal) {
+                // Loop backwards from dateCursor
+                while (true) {
+                    const key = dateCursor.toISOString().split('T')[0];
+                    const log = logMap.get(key);
+                    if (log && log.stats[weedHabit.name] && log.stats[weedHabit.name].points > 0) {
+                        calcStreak++;
+                        dateCursor.setDate(dateCursor.getDate() - 1);
+                    } else {
+                        break;
+                    }
+                }
+            }
+
+            setRecoveryStreak(calcStreak);
+            setRecoveryInsight(getRecoveryInsight(calcStreak));
+        }
 
     }, [logs, habits]);
 
@@ -229,56 +302,71 @@ export const Dashboard: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Progress Insights */}
-                <div className="luxury-card rounded-lg p-8 border-l-4 border-veridian">
-                    <h2 className="text-2xl font-bold mb-6 text-royal-blue" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
-                        Progress Insights
-                    </h2>
-                    <div className="space-y-4">
-                        {totalXP === 0 ? (
-                            <div className="flex items-start gap-4">
-                                <div className="w-2 h-2 bg-lavender rounded-full mt-2" />
-                                <p className="text-lavender italic text-lg">
-                                    Begin your journey. Complete daily tasks to unlock insights about your evolution...
-                                </p>
+                {/* RECOVERY JOURNEY WIDGET */}
+                <div className="luxury-card rounded-lg p-8 border-l-4 border-veridian mt-8">
+                    <div className="flex items-center justify-between mb-6">
+                        <h2 className="text-2xl font-bold text-royal-blue flex items-center gap-3" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
+                            <ShieldCheck className="text-veridian" size={28} />
+                            Recovery Journey
+                        </h2>
+                        {isRecoveryActive && (
+                            <div className="flex items-center gap-3 bg-luxury-black/50 px-4 py-2 rounded-lg border border-veridian/30">
+                                <Flame className="text-orange-500 animate-pulse" size={20} />
+                                <span className="text-2xl font-bold text-white" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
+                                    {recoveryStreak} <span className="text-sm font-normal text-lavender uppercase ml-1">Days Clean</span>
+                                </span>
                             </div>
-                        ) : (
-                            <>
-                                {streak >= 3 && (
-                                    <div className="flex items-start gap-4">
-                                        <div className="w-2 h-2 bg-veridian rounded-full mt-2" />
-                                        <p className="text-royal-blue text-lg">
-                                            <span className="font-bold text-veridian">{streak}-Day Mastery Streak:</span> Momentum compounds. Neural pathways strengthening through disciplined repetition.
-                                        </p>
-                                    </div>
-                                )}
-                                {longestStreak > streak && (
-                                    <div className="flex items-start gap-4">
-                                        <div className="w-2 h-2 bg-gold rounded-full mt-2" />
-                                        <p className="text-royal-blue text-lg">
-                                            <span className="font-bold text-gold">Record to Beat:</span> Your best was {longestStreak} days. Push beyond your limits.
-                                        </p>
-                                    </div>
-                                )}
-                                {areaTotals.Physical > 20 && (
-                                    <div className="flex items-start gap-4">
-                                        <div className="w-2 h-2 bg-gold rounded-full mt-2" />
-                                        <p className="text-royal-blue text-lg">
-                                            <span className="font-bold text-gold">Physical Excellence:</span> The body adapts. Increased mitochondrial density improving energy systems.
-                                        </p>
-                                    </div>
-                                )}
-                                {areaTotals.Psyche > 15 && (
-                                    <div className="flex items-start gap-4">
-                                        <div className="w-2 h-2 bg-lavender rounded-full mt-2" />
-                                        <p className="text-royal-blue text-lg">
-                                            <span className="font-bold text-lavender">Mental Discipline:</span> Prefrontal cortex activation increasing. Decision fatigue diminishing.
-                                        </p>
-                                    </div>
-                                )}
-                            </>
                         )}
                     </div>
+
+                    {!isRecoveryActive ? (
+                        <div className="bg-luxury-black/30 p-6 rounded-lg border border-royal-blue/20">
+                            <p className="text-lavender text-lg text-center mb-4">
+                                "The first step is deciding to start."
+                            </p>
+                            <p className="text-royal-blue text-center">
+                                Add a habit named <strong>"No Weed"</strong> or <strong>"Sobriety"</strong> in Settings to activate your personalized recovery timeline.
+                            </p>
+                        </div>
+                    ) : (
+                        <div className="space-y-6">
+                            <div className="flex items-start gap-4">
+                                <div className="w-1 bg-gradient-to-b from-veridian to-transparent self-stretch rounded-full" />
+                                <div>
+                                    <h3 className="text-xl font-bold text-veridian mb-2" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
+                                        Current Milestone
+                                    </h3>
+                                    <p className="text-royal-blue text-lg leading-relaxed">
+                                        {recoveryInsight}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Visual Timeline Bar */}
+                            <div className="mt-6">
+                                <div className="flex justify-between text-xs text-lavender uppercase tracking-widest mb-2">
+                                    <span>Start</span>
+                                    <span>7 Days</span>
+                                    <span>30 Days</span>
+                                    <span>90 Days</span>
+                                </div>
+                                <div className="h-4 bg-luxury-black rounded-full overflow-hidden border border-royal-blue/20 relative">
+                                    {/* Markers */}
+                                    <div className="absolute left-[7.7%] h-full w-0.5 bg-royal-blue/20" />
+                                    <div className="absolute left-[33%] h-full w-0.5 bg-royal-blue/20" />
+
+                                    {/* Fill */}
+                                    <div
+                                        className="h-full bg-gradient-to-r from-teal-900 to-veridian transition-all duration-1000 ease-out"
+                                        style={{ width: `${Math.min(100, (recoveryStreak / 90) * 100)}%` }}
+                                    />
+                                </div>
+                                <p className="text-center text-xs text-lavender mt-2">
+                                    {Math.max(0, 90 - recoveryStreak)} days until Full Integration
+                                </p>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

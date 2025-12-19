@@ -3,14 +3,19 @@ import { SUBSTATS } from '../config/stats';
 import { getAllDailyLogs } from '../utils/storage';
 import type { DailyLogEntry } from '../utils/storage';
 
-// Types
+// Re-export specific types for consumers
+export type { DailyLogEntry };
+
 export interface Habit {
+    id: string;
+    area: 'Physical' | 'Psyche' | 'Intellect' | 'Spiritual' | 'Core';
     name: string;
     description: string;
-    area: 'Physical' | 'Psyche' | 'Intellect' | 'Spiritual' | 'Core';
     pointsPerUnit: number;
     unit: string;
-    maxPerDay?: number;
+    type: 'boolean' | 'number';
+    maxPerDay?: number; // for progress bars
+    points: number; // calculated points (deprecated? or base val?) actually pointsPerUnit is likely what controls calc.
 }
 
 interface GameContextType {
@@ -26,7 +31,16 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Initialize habits from static config for now (later from DB/LocalStorage)
     const [habits, setHabits] = useState<Habit[]>(() => {
         const saved = localStorage.getItem('life-rpg-habits');
-        return saved ? JSON.parse(saved) : SUBSTATS;
+        if (saved) return JSON.parse(saved);
+
+        // Initialize from SUBSTATS with required fields
+        return SUBSTATS.map(h => ({
+            ...h,
+            id: h.name,
+            type: 'number',
+            points: 0,
+            maxPerDay: 0
+        } as Habit));
     });
 
     const [logs, setLogs] = useState<DailyLogEntry[]>([]);
