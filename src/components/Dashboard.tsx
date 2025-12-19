@@ -164,8 +164,10 @@ export const Dashboard: React.FC = () => {
     const MILESTONES = [
         { day: 0, label: 'Start', left: '0%', benefit: 'The Decision. You took back control.', bonus: 0 },
         { day: 7, label: '7 Days', left: '7.7%', benefit: 'Physical Cleanse. Metabolites leave the blood. Sleep normalizes.', bonus: 500 },
-        { day: 30, label: '30 Days', left: '33%', benefit: 'Psychological Reset. Habit loops broken. Memory improves.', bonus: 1000 },
-        { day: 90, label: '90 Days', left: '100%', benefit: 'Full Integration. Dopamine baseline restored. You are free.', bonus: 2500 },
+        { day: 14, label: '14 Days', left: '15.5%', benefit: 'Dopamine Reset. Natural joys start to feel real again.', bonus: 750 },
+        { day: 30, label: '30 Days', left: '33.3%', benefit: 'Psychological Reset. Habit loops broken. Memory improves.', bonus: 1000 },
+        { day: 60, label: '60 Days', left: '66.6%', benefit: 'Emotional Stability. Prefrontal cortex regulation returns.', bonus: 1750 },
+        { day: 90, label: '90 Days', left: '99%', benefit: 'Full Integration. Dopamine baseline restored. You are free.', bonus: 2500 },
     ];
 
     // Calculate Bonus XP from Recovery
@@ -387,7 +389,10 @@ export const Dashboard: React.FC = () => {
                                     {MILESTONES.map((m) => (
                                         <div
                                             key={m.day}
-                                            className="absolute top-0 transform -translate-x-1/2 group/marker cursor-help z-10"
+                                            className={`absolute top-0 transform group/marker cursor-help z-10 ${m.day === 0 ? '-translate-x-0' :
+                                                    m.day === 90 ? '-translate-x-[90%]' :
+                                                        '-translate-x-1/2'
+                                                }`}
                                             style={{ left: m.left }}
                                         >
                                             <div className="text-xs text-lavender uppercase tracking-widest hover:text-white transition-colors">
