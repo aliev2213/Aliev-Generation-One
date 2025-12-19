@@ -400,9 +400,9 @@ export const Dashboard: React.FC = () => {
                                             </div>
 
                                             {/* Tooltip */}
-                                            <div className={`hidden group-hover/marker:block absolute bottom-full mb-2 w-64 bg-slate-900/95 border border-indigo-500/50 p-3 rounded-lg shadow-xl backdrop-blur-sm z-50 ${m.day === 0 ? 'left-0 origin-bottom-left' :
-                                                m.day === 90 ? 'right-0 origin-bottom-right' :
-                                                    'left-1/2 -translate-x-1/2 origin-bottom'
+                                            <div className={`hidden group-hover/marker:block absolute bottom-full mb-2 w-64 bg-slate-900/95 border border-indigo-500/50 p-3 rounded-lg shadow-xl backdrop-blur-sm z-50 whitespace-normal ${m.day === 0 ? 'left-0 origin-bottom-left' :
+                                                    m.day === 90 ? 'right-0 origin-bottom-right' :
+                                                        'left-1/2 -translate-x-1/2 origin-bottom'
                                                 }`}>
                                                 <div className="text-indigo-300 font-bold mb-1">{m.label} Milestone</div>
                                                 <p className="text-xs text-slate-300 leading-relaxed mb-2">{m.benefit}</p>
